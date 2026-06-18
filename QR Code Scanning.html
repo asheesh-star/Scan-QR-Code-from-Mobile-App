@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>PDS Device Mockup - S26 Ultra</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --phone-width: 380px;
+            --phone-height: 820px;
+            --bezel-color: #0f172a;
+            --screen-bg: #f8f9fa;
+            --mani-purple: #a1247d;
+            --header-dark: #31364a;
+            --step-blue: #5851db;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .s26-ultra-frame {
+            width: var(--phone-width);
+            height: var(--phone-height);
+            background: var(--bezel-color);
+            border-radius: 44px;
+            padding: 10px;
+            position: relative;
+            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .s26-screen {
+            width: 100%;
+            height: 100%;
+            background: var(--screen-bg);
+            border-radius: 34px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+        }
+
+        .camera-punch {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 10px;
+            background: #000;
+            border-radius: 50%;
+            z-index: 100;
+        }
+
+        .status-bar {
+            height: 44px;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 600;
+            background-color: var(--header-dark);
+            color: white;
+            z-index: 90;
+        }
+
+        .app-header {
+            background-color: var(--header-dark);
+            color: white;
+            padding: 4px 16px 16px 16px;
+        }
+
+        .view-container { display: none; flex-direction: column; height: 100%; overflow: hidden; position: relative; }
+        .view-container.active { display: flex; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .dashboard-stat-card { background: white; border-radius: 8px; padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .dashboard-stat-card.primary { background-color: var(--mani-purple); color: white; }
+
+        .device-list-card { background: white; border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; cursor: pointer; border: 1px solid #f1f5f9; }
+
+        .swipe-item { position: relative; width: 100%; overflow: hidden; border-radius: 8px; touch-action: pan-y; margin-bottom: 1rem; }
+        .swipe-actions { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background-color: #ef4444; display: flex; align-items: center; justify-content: center; z-index: 1; }
+        .swipe-content { position: relative; z-index: 10; background: white; transition: transform 0.3s cubic-bezier(0.17, 0.84, 0.44, 1); will-change: transform; cursor: pointer; border: 1px solid #e2e8f0; border-radius: 8px; }
+
+        .status-pill { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .status-pill.online { background-color: #e6f4ea; color: #1e7e34; }
+        .status-pill.offline { background-color: #fce8e8; color: #d93025; }
+        .status-pill.inactive { background-color: #f1f3f4; color: #5f6368; }
+        .dot { width: 6px; height: 6px; border-radius: 50%; }
+        .dot-online { background-color: #1e7e34; }
+        .dot-offline { background-color: #d93025; }
+        .dot-inactive { background-color: #5f6368; }
+
+        .drawer-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+        .drawer-overlay.active { opacity: 1; visibility: visible; }
+        .side-drawer { position: absolute; top: 0; left: 0; bottom: 0; width: 75%; background: white; z-index: 310; transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.17, 0.84, 0.44, 1); display: flex; flex-direction: column; }
+        .side-drawer.active { transform: translateX(0); }
+        .drawer-header { background-color: var(--header-dark); padding: 32px 20px 16px 20px; color: white; }
+        .profile-avatar { width: 54px; height: 54px; background: #fff; border-radius: 50%; margin-right: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+        .nav-item { display: flex; align-items: center; padding: 14px 24px; gap: 16px; color: #64748b; font-size: 15px; font-weight: 500; cursor: pointer; }
+        .nav-item.active { background-color: #fceef6; color: var(--mani-purple); border-left: 4px solid var(--mani-purple); padding-left: 20px; padding-right: 12px; }
+
+        .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 400; opacity: 0; visibility: hidden; transition: all 0.3s ease; display: flex; align-items: flex-end; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .bottom-sheet { width: 100%; background: white; border-top-left-radius: 28px; border-top-right-radius: 28px; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.17, 0.84, 0.44, 1); max-height: 90%; padding: 24px; }
+        .bottom-sheet.active { transform: translateY(0); }
+
+        .form-input { width: 100%; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; font-size: 14px; outline: none; color: #475569; }
+        .add-device-btn { width: calc(100% - 48px); background-color: var(--mani-purple); color: white; padding: 16px; border-radius: 28px; font-weight: 700; font-size: 16px; margin: 16px 24px; text-align: center; box-shadow: 0 6px 12px rgba(161, 36, 125, 0.25); }
+
+        .nav-bar { height: 24px; width: 100%; display: flex; justify-content: center; align-items: center; background: white; }
+        .nav-handle { width: 110px; height: 4px; background: #000; border-radius: 10px; opacity: 0.1; }
+
+        .day-tab { font-size: 11px; font-weight: 700; color: #7c839b; padding: 8px 0; position: relative; display: flex; flex-direction: column; align-items: center; width: 40px; }
+        .day-tab.active { color: white; }
+        .active-pill { width: 16px; height: 4px; background-color: #ff5252; border-radius: 2px; position: absolute; bottom: -2px; }
+        .step-circle { width: 22px; height: 22px; background-color: var(--step-blue); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; }
+        .activation-input { width: 100%; background: white; border: 2px solid #a5b4fc; border-radius: 12px; padding: 12px; text-align: center; font-size: 18px; font-weight: 700; color: #475569; outline: none; }
+        .activation-action-btn { width: 100%; background-color: #8b5cf6; color: white; font-size: 15px; font-weight: 700; padding: 14px; border-radius: 12px; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
+
+        /* QR Scanner Mockup Styles */
+        #qrScannerModal { position: absolute; inset: 0; background: #000; z-index: 1000; display: none; flex-direction: column; border-radius: 34px; overflow: hidden; }
+        .scanner-viewfinder { position: relative; width: 240px; height: 240px; border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 24px; display: flex; align-items: center; justify-content: center; }
+        .scanner-viewfinder::before { content: ''; position: absolute; width: 100%; height: 2px; background: #ef4444; top: 0; animation: scanLine 2s infinite linear; }
+        @keyframes scanLine { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+        .corner { position: absolute; width: 20px; height: 20px; border: 4px solid #fff; }
+        .tl { top: -2px; left: -2px; border-right: 0; border-bottom: 0; border-top-left-radius: 12px; }
+        .tr { top: -2px; right: -2px; border-left: 0; border-bottom: 0; border-top-right-radius: 12px; }
+        .bl { bottom: -2px; left: -2px; border-right: 0; border-top: 0; border-bottom-left-radius: 12px; }
+        .br { bottom: -2px; right: -2px; border-left: 0; border-top: 0; border-bottom-right-radius: 12px; }
+
+        /* Menu Item Specifics */
+        .menu-item-card { background: white; border-radius: 12px; padding: 12px; display: flex; gap: 12px; align-items: center; border: 1px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s; position: relative; }
+        .menu-item-img { 
+            width: 60px; 
+            height: 60px; 
+            border-radius: 8px; 
+            object-fit: contain; 
+            padding: 4px;
+            background-color: #f8fafc; 
+            flex-shrink: 0; 
+        }
+        .search-container { padding: 12px 16px; background: white; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 10px; }
+        .search-input { flex-grow: 1; width: 100%; background: #f1f5f9; border: none; border-radius: 10px; padding: 10px 16px 10px 40px; font-size: 14px; outline: none; }
+
+        /* Inline Edit Styling */
+        .inline-price-input { border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; width: 80px; font-weight: 800; color: var(--mani-purple); outline: none; background: #fff; }
+        .inline-price-input:focus { border-color: var(--mani-purple); }
+    </style>
+</head>
+<body>
+
+    <div class="s26-ultra-frame">
+        <div class="s26-screen">
+            <div class="camera-punch"></div>
+
+            <!-- Global Status Bar -->
+            <div class="status-bar">
+                <span class="font-bold">23:59</span>
+                <div class="flex items-center gap-1.5">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M21 3L3 21h18V3z"/></svg>
+                    <div class="w-3.5 h-3.5 border-2 border-white rounded-sm"></div>
+                    <span class="text-[11px] font-bold">59%</span>
+                </div>
+            </div>
+
+            <!-- Side Drawer -->
+            <div id="drawerOverlay" class="drawer-overlay" onclick="toggleMenu()"></div>
+            <div id="sideDrawer" class="side-drawer">
+                <div class="drawer-header">
+                    <div class="flex items-center mb-1">
+                        <div class="profile-avatar">
+                            <svg class="w-10 h-10 text-gray-300" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        </div>
+                        <div>
+                            <div class="profile-name text-[16px] font-bold leading-tight">M Kumar</div>
+                            <div class="profile-email text-[11px] text-gray-300 font-normal">signage@enterprise.com</div>
+                            <div class="border-l-2 border-[#a1247d] pl-2 text-[11px] font-medium leading-tight mt-1">Mani's Organization<br>Corporate</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 text-[10px] text-gray-400 mt-2 ml-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Tue, Mar 17 09:20 PM ,IST
+                    </div>
+                </div>
+                <div class="drawer-nav flex-grow">
+                    <div id="menuDashboard" class="nav-item active" onclick="showDashboard()">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                        Dashboard
+                    </div>
+                    <div id="menuDevices" class="nav-item" onclick="showDevicesView()">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        Devices
+                    </div>
+                    <div id="menuItemsTab" class="nav-item" onclick="showMenuItemsView()">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+                        Menu Items
+                    </div>
+                </div>
+                <div class="border-t border-gray-100 flex items-center justify-between px-6 py-4 bg-[#fcfcfc]">
+                    <div class="flex items-center gap-3 text-gray-500 font-bold text-[14px] cursor-pointer active:opacity-50">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        Settings
+                    </div>
+                    <div class="flex items-center gap-3 text-red-500 font-bold text-[14px] cursor-pointer active:opacity-50">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                        Logout
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 1: DASHBOARD -->
+            <div id="dashboardView" class="view-container active">
+                <header class="app-header">
+                    <div class="flex items-center justify-between h-14">
+                        <div class="flex items-center">
+                            <button class="mr-3" onclick="toggleMenu()">
+                                <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke="#ff5252" d="M4 8h16" /><path stroke="white" d="M4 12h10M4 16h16" />
+                                </svg>
+                            </button>
+                            <h1 class="text-[17px] font-semibold text-white tracking-wide">Plum Digital Signage</h1>
+                        </div>
+                        <button><svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg></button>
+                    </div>
+                </header>
+                <div class="flex-grow p-4 overflow-y-auto hide-scrollbar space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="dashboard-stat-card primary"><span class="text-[11px] font-semibold">Total Devices</span><span class="text-xl font-bold" id="totalCount">05</span></div>
+                        <div class="dashboard-stat-card border border-gray-100"><span class="text-[11px] font-semibold text-[#a1247d]">Inactive Device</span><span class="text-xl font-bold text-gray-700" id="inactiveCount">02</span></div>
+                        <div class="dashboard-stat-card border border-gray-100"><span class="text-[11px] font-semibold text-[#a1247d]">Online Device</span><span class="text-xl font-bold text-gray-700" id="onlineCount">01</span></div>
+                        <div class="dashboard-stat-card border border-gray-100"><span class="text-[11px] font-semibold text-[#a1247d]">Offline Device</span><span class="text-xl font-bold text-gray-700" id="offlineCount">02</span></div>
+                    </div>
+                    <div id="dashboardList" class="space-y-1"></div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: DEVICES TAB -->
+            <div id="devicesView" class="view-container">
+                <header class="app-header">
+                    <div class="flex items-center justify-between h-14">
+                        <div class="flex items-center">
+                            <button class="mr-3" onclick="toggleMenu()">
+                                <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke="#ff5252" d="M4 8h16" /><path stroke="white" d="M4 12h10M4 16h16" /></svg>
+                            </button>
+                            <h1 class="text-[17px] font-semibold text-white tracking-wide">Devices</h1>
+                        </div>
+                        <button><svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg></button>
+                    </div>
+                </header>
+                <div id="deviceDetailedList" class="flex-grow p-4 overflow-y-auto hide-scrollbar space-y-1"></div>
+                <div class="bg-white border-t flex justify-center py-4">
+                    <button class="add-device-btn" onclick="showAddDeviceView()">Add Device</button>
+                </div>
+            </div>
+
+            <!-- VIEW: MENU ITEMS TAB -->
+            <div id="menuItemsView" class="view-container">
+                <header class="app-header">
+                    <div class="flex items-center justify-between h-14">
+                        <div class="flex items-center">
+                            <button class="mr-3" onclick="toggleMenu()">
+                                <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke="#ff5252" d="M4 8h16" /><path stroke="white" d="M4 12h10M4 16h16" /></svg>
+                            </button>
+                            <h1 class="text-[17px] font-semibold text-white tracking-wide" id="menuHeaderTitle">Menu Items</h1>
+                        </div>
+                    </div>
+                </header>
+                
+                <div class="search-container relative">
+                    <div class="relative flex-grow min-w-0" id="menuSearchWrapper">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <input type="text" id="menuSearch" placeholder="Search..." class="search-input" oninput="renderMenuItems()">
+                    </div>
+                    
+                    <div id="menuEditControls" class="flex items-center flex-shrink-0">
+                        <button id="globalEditBtn" onclick="toggleMenuEditMode()" class="text-slate-400 p-2 active:opacity-60 bg-slate-100 rounded-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                        </button>
+                        <div id="saveCancelControls" class="flex gap-1" style="display: none;">
+                            <button onclick="toggleMenuEditMode()" class="text-[10px] font-bold text-slate-500 bg-slate-100 px-[14px] py-[10px] rounded-lg whitespace-nowrap">Cancel</button>
+                            <button onclick="saveAllMenuPrices()" class="text-[10px] font-bold text-white bg-[#a1247d] px-[16px] py-[10px] rounded-lg shadow-sm whitespace-nowrap">Save</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-grow p-4 overflow-y-auto hide-scrollbar space-y-3" id="menuItemsList"></div>
+            </div>
+
+            <!-- VIEW: DETAIL VIEW (Template View) -->
+            <div id="detailView" class="view-container">
+                <header class="app-header">
+                    <div class="flex items-center h-14">
+                        <button class="mr-4" onclick="goBackFromDevice()"><svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M15 19l-7-7 7-7"/></svg></button>
+                        <h1 class="text-[22px] font-bold text-white" id="detailHeaderTitle">Device</h1>
+                    </div>
+                    <div class="flex justify-between px-1 mt-4">
+                        <div class="day-tab">SUN</div><div class="day-tab active">MON<div class="active-pill"></div></div><div class="day-tab">TUE</div><div class="day-tab">WED</div><div class="day-tab">THU</div><div class="day-tab">FRI</div><div class="day-tab">SAT</div>
+                    </div>
+                </header>
+                <div class="flex-grow p-4 overflow-y-auto hide-scrollbar">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                        <div class="promo-banner relative min-h-[190px] flex flex-col justify-between p-4 bg-[#8b0000]">
+                            <div class="flex justify-between items-start text-white"><p class="font-extrabold text-sm italic">Hurry up!</p><div class="text-center"><p class="text-yellow-400 font-black text-xs">Today's</p><p class="text-white font-black text-xl uppercase italic -mt-1">Special</p></div></div>
+                            <div class="flex justify-center"><img src="https://img.icons8.com/emoji/96/000000/hamburger-emoji.png" class="w-20 h-20 object-contain"></div>
+                        </div>
+                        <div class="p-5 space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[#a1247d] font-bold text-lg" id="detailBodyTitle">Device</span>
+                                <div class="status-pill inactive" id="detailStatusBadge">
+                                    <div class="dot dot-inactive"></div>
+                                    <span>Inactive</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 bg-white border-t" id="activateBtnContainer">
+                    <button onclick="showActivationPage()" class="w-full bg-[#3a4155] text-white font-black py-4 rounded-xl shadow-lg uppercase tracking-widest text-sm">Activate Device</button>
+                </div>
+            </div>
+
+            <!-- VIEW: ACTIVATION PAGE -->
+            <div id="activationView" class="view-container">
+                <header class="app-header">
+                    <div class="flex items-center h-14">
+                        <button class="mr-4 active:opacity-60" onclick="showDetailView()"><svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg></button>
+                        <h1 class="text-[22px] font-bold text-white">Activate Device</h1>
+                    </div>
+                </header>
+                <div class="flex-grow p-6 overflow-y-auto hide-scrollbar bg-white">
+                    <div class="space-y-5">
+                        <div class="flex items-start gap-4"><div class="step-circle">1</div><p class="text-[13px] leading-relaxed text-[#475569]">Ensure your display device (TV/Monitor) is powered on and ready.</p></div>
+                        <div class="flex items-start gap-4"><div class="step-circle">2</div><p class="text-[13px] leading-relaxed text-[#475569]">Connect your media player to your Wi-Fi network.</p></div>
+                        <div class="flex items-start gap-4"><div class="step-circle">3</div><p class="text-[13px] leading-relaxed text-[#475569]">Select Plum as your digital signage brand during the initial setup.</p></div>
+                        <div class="flex items-start gap-4"><div class="step-circle">4</div><p class="text-[13px] leading-relaxed text-[#475569]">Download and install the Digital Signage App on your media player.</p></div>
+                        <div class="flex items-start gap-4"><div class="step-circle">5</div><p class="text-[13px] leading-relaxed text-[#475569]">Locate the 6-digit activation code displayed on your screen.</p></div>
+                        <div class="flex items-start gap-4"><div class="step-circle">6</div><p class="text-[13px] leading-relaxed text-[#475569]">Enter the activation code in the field below to link your device to your account.</p></div>
+                        <div class="flex items-start gap-4"><div class="step-circle">7</div><p class="text-[13px] leading-relaxed text-[#475569]">Click "Finish Setup" to complete the activation process.</p></div>
+                        
+                        <div class="pt-4 space-y-4">
+                            <div class="relative">
+                                <input type="text" id="activationCode" placeholder="E.G. CD879" class="activation-input" autocomplete="off">
+                                <button onclick="openScanner('activationCode')" class="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-slate-100 rounded-lg text-slate-500 hover:text-[#a1247d]">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 012-2h2m10 0h2a2 2 0 012 2v2m0 10v2a2 2 0 01-2 2h-2m-10 0H5a2 2 0 01-2-2v-2M7 12h10"/></svg>
+                                </button>
+                            </div>
+                            <button id="verifyBtn" class="activation-action-btn" onclick="verifyCode()">Finish Setup</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: ADD DEVICE -->
+            <div id="addDeviceView" class="view-container">
+                <header class="app-header"><div class="flex items-center h-14"><button class="mr-4" onclick="showDevicesView()"><svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M15 19l-7-7 7-7"/></svg></button><h1 class="text-[20px] font-bold text-white">Add Device</h1></div></header>
+                <div class="flex-grow p-4 overflow-y-auto">
+                    <p class="text-gray-500 text-sm mb-4">Add your digital signage device</p>
+                    <div class="flex justify-center mb-6">
+                        <div class="relative w-48 h-32 bg-gray-100 border-[6px] border-[#31364a] rounded-sm flex items-center justify-center p-2">
+                            <div class="w-full h-full bg-white flex flex-col p-1 shadow-sm">
+                                <div class="flex items-center gap-1 mb-1"><div class="w-1.5 h-1.5 rounded-full bg-[#a1247d]"></div><span class="text-[6px] font-extrabold">Plum Signage</span></div>
+                                <div class="flex-grow flex flex-col items-center justify-center text-center">
+                                    <p class="text-[5px] text-gray-400">Let's activate your Signage</p>
+                                    <div class="border border-dashed border-[#a1247d] px-2 py-0.5 text-[7px] font-black text-[#a1247d] mt-2">CD879</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div><label class="text-[12px] text-gray-400 font-semibold block mb-1">Enter Device Name</label><input type="text" id="newName" placeholder="Enter device name" class="form-input"></div>
+                        <div>
+                            <label class="text-[12px] text-gray-400 font-semibold block mb-1">Enter Activation Code</label>
+                            <div class="relative">
+                                <input type="text" id="newCode" placeholder="Enter activation code" class="form-input pr-12">
+                                <button onclick="openScanner('newCode')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#a1247d]">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 012-2h2m10 0h2a2 2 0 012 2v2m0 10v2a2 2 0 01-2 2h-2m-10 0H5a2 2 0 01-2-2v-2M7 12h10"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div><label class="text-[12px] text-gray-400 font-semibold block mb-1">Virtual Device</label><div onclick="openVirtualSheet()" class="form-input flex justify-between items-center text-gray-400" id="virtualDisplay">Select virtual device <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg></div></div>
+                    </div>
+                </div>
+                <div class="p-4 bg-white border-t"><button onclick="addNewDevice()" class="w-full bg-[#a1247d] text-white font-bold py-4 rounded-full shadow-lg">Activate Device</button></div>
+            </div>
+
+            <!-- VIEW: UPDATE DEVICE -->
+            <div id="updateView" class="view-container">
+                <header class="app-header">
+                    <div class="flex items-center h-14">
+                        <button class="mr-4" onclick="goBackFromDevice()"><svg class="h-6 w-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M15 19l-7-7 7-7"/></svg></button>
+                        <h1 class="text-[20px] font-bold text-white" id="updateHeaderTitle">Device Name</h1>
+                    </div>
+                </header>
+                <div class="flex-grow p-4 bg-white overflow-y-auto hide-scrollbar flex flex-col">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-[18px] font-bold text-slate-700">Update Device</h2>
+                        <div class="status-pill online" id="updateStatusPill"><div class="dot dot-online"></div><span>Online</span></div>
+                    </div>
+                    <div class="mb-6">
+                        <p class="text-[13px] text-gray-400 font-medium mb-1.5">Device Name</p>
+                        <input type="text" id="updateNameInput" class="form-input font-medium text-gray-600 bg-white border border-gray-300">
+                    </div>
+
+                    <div class="mb-6" id="verticalOrientationContainer" style="display: none;">
+                        <label class="text-[13px] text-gray-500 font-bold mb-2 block">Select Vertical Orientation <span class="text-red-500 text-[16px] font-bold">*</span></label>
+                        <div class="relative">
+                            <select id="orientationSelector" class="form-input font-medium text-gray-600 appearance-none bg-white pr-10 border-gray-300">
+                                <option value="portrait">Portrait</option>
+                                <option value="portrait_flipped" selected>Portrait flipped</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-[#a1247d]">
+                                <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 mt-4">
+                        <div class="flex justify-between items-center"><span class="text-[13px] text-gray-400 font-medium">Device ID :</span><span class="text-[11px] text-gray-500 font-mono truncate ml-4" id="updateDeviceId">1d3cae81-6297-4d13-a499-44caf22d850f</span></div>
+                        <div class="flex justify-between"><span class="text-[13px] text-gray-400">Virtual Device Name :</span><span class="text-[13px]" id="updateStatVirtual">Hall TV</span></div>
+                        <div class="flex justify-between"><span class="text-[13px] text-gray-400">Device Orientation :</span><span class="text-[13px]" id="updateStatOrientation">Horizontal</span></div>
+                        <div class="flex justify-between"><span class="text-[13px] text-gray-400">Device Type :</span><span class="text-[13px]">ANDROID</span></div>
+                        <div class="flex justify-between"><span class="text-[13px] text-gray-400">Last Sync Time :</span><span class="text-[13px]">0d 0m ago</span></div>
+                    </div>
+                </div>
+                <div class="p-4 bg-white border-t">
+                    <button onclick="saveDeviceChanges()" class="w-full bg-[#a1247d] text-white font-bold py-4 rounded-xl shadow-lg">Save Changes</button>
+                </div>
+            </div>
+
+            <!-- SCANNER MODAL -->
+            <div id="qrScannerModal" class="flex flex-col items-center justify-between py-12 px-8">
+                <div class="text-white text-center mt-8">
+                    <h2 class="text-xl font-bold mb-2">Scan QR Code</h2>
+                    <p class="text-xs text-gray-400">Align the code within the frame</p>
+                </div>
+                <div class="scanner-viewfinder">
+                    <div class="corner tl"></div>
+                    <div class="corner tr"></div>
+                    <div class="corner bl"></div>
+                    <div class="corner br"></div>
+                    <div class="w-16 h-16 opacity-20 text-white">
+                         <svg fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h7V11H4V4M4 13h7v7H4v-7M13 4h7v7h-7V4M13 13h7v7h-7v-7z"/></svg>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-4 w-full">
+                    <button onclick="mockScanSuccess()" class="bg-white/20 text-white font-bold py-4 rounded-2xl backdrop-blur-md active:bg-white/30 transition-all">Capture Code</button>
+                    <button onclick="closeScanner()" class="text-white/60 font-medium text-sm">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Modals -->
+            <div id="virtualSheet" class="modal-overlay" onclick="closeVirtualSheet()">
+                <div class="bottom-sheet" onclick="event.stopPropagation()">
+                    <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6 opacity-30"></div>
+                    <h2 class="text-xl font-bold mb-4">Select Virtual Device</h2>
+                    <div class="space-y-2">
+                        <button class="w-full py-4 text-left px-4 hover:bg-gray-100 rounded-xl" onclick="selectVirtual('Test Virtual De')">Test Virtual De</button>
+                        <button class="w-full py-4 text-left px-4 hover:bg-gray-100 rounded-xl" onclick="selectVirtual('Hall TV')">Hall TV</button>
+                        <button class="w-full py-4 text-left px-4 hover:bg-gray-100 rounded-xl" onclick="selectVirtual('Default Virtual Device')">Default Virtual Device</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="deleteModal" class="modal-overlay" onclick="closeDeleteModal()">
+                <div class="bottom-sheet" id="deleteModalContent" onclick="event.stopPropagation()">
+                    <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6 opacity-30"></div>
+                    <div class="text-center space-y-4 mb-8">
+                        <div class="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-900">Delete Device?</h2>
+                        <p class="text-sm text-gray-500 px-6">Are you sure you want to delete this device? This action cannot be undone.</p>
+                    </div>
+                    <div class="space-y-3 px-2">
+                        <button class="w-full bg-red-500 text-white font-bold py-4 rounded-xl shadow-lg" onclick="confirmDelete()">Delete Now</button>
+                        <button class="w-full py-4 text-gray-400 font-bold" onclick="closeDeleteModal()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="quickEditModal" class="modal-overlay" onclick="closeQuickEditModal()">
+                <div class="bottom-sheet" onclick="event.stopPropagation()">
+                    <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6 opacity-30"></div>
+                    <h2 class="text-xl font-black mb-1">Update Item Price</h2>
+                    <p id="quickEditSub" class="text-sm text-gray-400 mb-6 font-medium">Edit individual item</p>
+                    <div class="mb-8">
+                        <label class="text-[12px] text-gray-400 font-bold block mb-2">New Price ($)</label>
+                        <input type="number" id="quickPriceInput" placeholder="0.00" class="form-input text-lg font-bold text-[#a1247d]" step="0.01">
+                    </div>
+                    <button onclick="applyQuickPrice()" class="w-full bg-[#a1247d] text-white font-bold py-4 rounded-xl shadow-lg">Apply Price</button>
+                    <button onclick="closeQuickEditModal()" class="w-full py-4 text-gray-400 font-bold text-sm">Cancel</button>
+                </div>
+            </div>
+
+            <div class="nav-bar"><div class="nav-handle"></div></div>
+        </div>
+    </div>
+
+    <script>
+        let devices = [
+            { id: '1d3cae81-6297-4d13-a499-44caf22d850f', name: 'Hall TV', virtual: 'Breakfast 1', status: 'Online', orientation: 'Vertical' },
+            { id: '1b576c91-e848-4213-8f5b-0ae52125765c', name: 'Dine IN TV', virtual: 'Dine IN Menu', status: 'Offline', orientation: 'Horizontal' },
+            { id: '3dd1c2f0-f0f8-4503-a2ab-39276cb3215e', name: 'Kids Area TV', virtual: 'Kids Menu', status: 'Offline', orientation: 'Horizontal' },
+            { id: '20260313_144640_607', name: 'BOH TV', virtual: 'Full Day Menu', status: 'Inactive', orientation: 'Horizontal' },
+            { id: '20260216_120547_901', name: 'Hall TV 2', virtual: 'Breakfast 2', status: 'Inactive', orientation: 'Vertical' }
+        ];
+
+        let menuItems = [
+            { id: 101, posId: 'POS-001', name: 'Classic Cheese Burger', price: 12.99, category: 'Main Menu', img: 'https://img.icons8.com/emoji/96/000000/hamburger-emoji.png' },
+            { id: 102, posId: 'POS-024', name: 'Pepperoni Feast Pizza', price: 18.50, category: 'Dinner Specials', img: 'https://img.icons8.com/emoji/96/000000/pizza-emoji.png' },
+            { id: 103, posId: 'POS-098', name: 'Vanilla Milkshake', price: 5.45, category: 'Beverages', img: 'https://img.icons8.com/emoji/96/000000/cup-with-straw-emoji.png' },
+            { id: 104, posId: 'POS-112', name: 'Garden Fresh Salad', price: 9.99, category: 'Healthy Bites', img: 'https://img.icons8.com/emoji/96/000000/green-salad-emoji.png' },
+            { id: 105, posId: 'POS-205', name: 'Crispy French Fries', price: 3.99, category: 'Sides', img: 'https://img.icons8.com/emoji/96/000000/french-fries-emoji.png' }
+        ];
+
+        let itemToDeleteIdx = null, selectedVirtual = null, activeDevice = null, activeMenuItem = null, scannerTargetId = null;
+        let isMenuEditMode = false;
+        let deviceViewSource = 'dashboard';
+
+        function toggleMenu() {
+            document.getElementById('sideDrawer').classList.toggle('active');
+            document.getElementById('drawerOverlay').classList.toggle('active');
+        }
+
+        function closeMenu() {
+            document.getElementById('sideDrawer').classList.remove('active');
+            document.getElementById('drawerOverlay').classList.remove('active');
+        }
+
+        function showDashboard() { closeMenu(); renderLists(); setActiveView('dashboardView'); setMenuActive('menuDashboard'); }
+        function showDevicesView() { closeMenu(); renderLists(); setActiveView('devicesView'); setMenuActive('menuDevices'); }
+        function showMenuItemsView() { closeMenu(); isMenuEditMode = false; renderMenuItems(); setActiveView('menuItemsView'); setMenuActive('menuItemsTab'); }
+        function showAddDeviceView() { setActiveView('addDeviceView'); }
+        function showActivationPage() { setActiveView('activationView'); }
+        function showDetailView() { setActiveView('detailView'); }
+
+        function goBackFromDevice() {
+            if (deviceViewSource === 'dashboard') showDashboard();
+            else showDevicesView();
+        }
+
+        function setMenuActive(id) {
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            const item = document.getElementById(id);
+            if (item) item.classList.add('active');
+        }
+
+        function setActiveView(id) {
+            document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+            const view = document.getElementById(id);
+            if (view) view.classList.add('active');
+        }
+
+        function renderLists() {
+            const dashList = document.getElementById('dashboardList');
+            const detailList = document.getElementById('deviceDetailedList');
+            if (!dashList || !detailList) return;
+            dashList.innerHTML = ''; detailList.innerHTML = '';
+            
+            let stats = { Online: 0, Offline: 0, Inactive: 0 };
+
+            devices.forEach((d, idx) => {
+                stats[d.status]++;
+                
+                // Activation buttons now explicitly pass their context source
+                let dashboardStatusHTML = d.status === 'Inactive' 
+                    ? `<div class="flex items-center gap-2">
+                        <button class="text-[11px] font-extrabold text-white bg-[#a1247d] px-3 py-1.5 rounded-lg shadow-sm active:opacity-70 flex items-center gap-1.5" onclick="event.stopPropagation(); startActivationFromSummary(${idx}, 'dashboard')">
+                            Activate <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+                        </button>
+                        <div class="status-pill inactive"><div class="dot dot-inactive"></div><span>Inactive</span></div>
+                       </div>`
+                    : `<div class="status-pill ${d.status.toLowerCase()}"><div class="dot dot-${d.status.toLowerCase()}"></div><span>${d.status}</span></div>`;
+
+                let deviceTabStatusHTML = d.status === 'Inactive' 
+                    ? `<div class="flex items-center gap-2">
+                        <button class="text-[11px] font-extrabold text-white bg-[#a1247d] px-3 py-1.5 rounded-lg shadow-sm active:opacity-70 flex items-center gap-1.5" onclick="event.stopPropagation(); startActivationFromSummary(${idx}, 'devices')">
+                            Activate <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+                        </button>
+                        <div class="status-pill inactive"><div class="dot dot-inactive"></div><span>Inactive</span></div>
+                       </div>`
+                    : `<div class="status-pill ${d.status.toLowerCase()}"><div class="dot dot-${d.status.toLowerCase()}"></div><span>${d.status}</span></div>`;
+
+                const dCard = document.createElement('div');
+                dCard.className = 'device-list-card';
+                dCard.onclick = () => handleDeviceClick(d, 'dashboard');
+                dCard.innerHTML = `<div><h3 class="text-[15px] font-bold text-[#a1247d]">${d.name}</h3><p class="text-[11px] text-gray-400">${d.virtual}</p></div>${dashboardStatusHTML}`;
+                dashList.appendChild(dCard);
+
+                const swipeItem = document.createElement('div');
+                swipeItem.className = 'swipe-item';
+                swipeItem.innerHTML = `<div class="swipe-actions"><button class="text-white" onclick="prepDelete(${idx})"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div>
+                    <div class="swipe-content p-4" onclick="handleDeviceClick(${JSON.stringify(d).replace(/"/g, '&quot;')}, 'devices')">
+                        <div class="flex justify-between items-center mb-2"><h3 class="text-[14px] font-bold text-[#a1247d]">${d.name}</h3>${deviceTabStatusHTML}</div>
+                        <div class="space-y-1"><div class="flex justify-between items-center text-[11px]"><span class="text-gray-400 font-medium">Virtual Device :</span><span class="text-gray-600">${d.virtual}</span></div><div class="flex justify-between items-center text-[11px]"><span class="text-gray-400 font-medium whitespace-nowrap">Device ID :</span><span class="text-gray-400 truncate ml-4 flex-grow text-right">${d.id}</span></div></div>
+                    </div>`;
+                detailList.appendChild(swipeItem);
+            });
+
+            document.getElementById('totalCount').innerText = devices.length.toString().padStart(2, '0');
+            document.getElementById('onlineCount').innerText = stats.Online.toString().padStart(2, '0');
+            document.getElementById('offlineCount').innerText = stats.Offline.toString().padStart(2, '0');
+            document.getElementById('inactiveCount').innerText = stats.Inactive.toString().padStart(2, '0');
+            initSwipe();
+        }
+
+        // SCANNER LOGIC
+        function openScanner(targetId) { scannerTargetId = targetId; document.getElementById('qrScannerModal').style.display = 'flex'; }
+        function closeScanner() { document.getElementById('qrScannerModal').style.display = 'none'; scannerTargetId = null; }
+        function mockScanSuccess() { if (scannerTargetId) { document.getElementById(scannerTargetId).value = "PLM" + Math.floor(100 + Math.random() * 900); closeScanner(); } }
+
+        function toggleMenuEditMode() {
+            isMenuEditMode = !isMenuEditMode;
+            const searchWrapper = document.getElementById('menuSearchWrapper');
+            document.getElementById('globalEditBtn').style.display = isMenuEditMode ? 'none' : 'block';
+            document.getElementById('saveCancelControls').style.display = isMenuEditMode ? 'flex' : 'none';
+            if (isMenuEditMode) { searchWrapper.classList.remove('flex-grow'); searchWrapper.style.width = '140px'; } 
+            else { searchWrapper.classList.add('flex-grow'); searchWrapper.style.width = 'auto'; }
+            renderMenuItems();
+        }
+
+        function renderMenuItems() {
+            const list = document.getElementById('menuItemsList');
+            const searchVal = document.getElementById('menuSearch').value.toLowerCase();
+            if (!list) return;
+            list.innerHTML = '';
+            const filtered = menuItems.filter(item => item.name.toLowerCase().includes(searchVal) || item.posId.toLowerCase().includes(searchVal));
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'menu-item-card';
+                let priceDisplay = isMenuEditMode ? `<input type="number" step="0.01" class="inline-price-input" value="${item.price.toFixed(2)}" data-id="${item.id}">` : `<p class="text-[14px] font-black text-[#a1247d]">$${item.price.toFixed(2)}</p>`;
+                card.innerHTML = `<img src="${item.img}" class="menu-item-img"><div class="flex-grow"><div class="flex justify-between items-start"><h3 class="font-bold text-slate-800 text-[14px] leading-tight">${item.name}</h3><button onclick="event.stopPropagation(); openQuickPriceSheet(${item.id})" class="p-2 text-slate-400 hover:text-[#a1247d]"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button></div><p class="text-[11px] text-gray-400 font-bold">${item.posId}</p><div class="flex items-center justify-between mt-1">${priceDisplay}</div></div>`;
+                list.appendChild(card);
+            });
+        }
+
+        function saveAllMenuPrices() {
+            document.querySelectorAll('.inline-price-input').forEach(input => {
+                const id = parseInt(input.getAttribute('data-id'));
+                const item = menuItems.find(m => m.id === id);
+                if (item) item.price = parseFloat(input.value);
+            });
+            toggleMenuEditMode();
+        }
+
+        function openQuickPriceSheet(id) {
+            activeMenuItem = menuItems.find(m => m.id === id);
+            if (!activeMenuItem) return;
+            document.getElementById('quickEditSub').innerText = `Editing: ${activeMenuItem.name}`;
+            document.getElementById('quickPriceInput').value = activeMenuItem.price;
+            document.getElementById('quickEditModal').classList.add('active');
+            document.querySelector('#quickEditModal .bottom-sheet').classList.add('active');
+        }
+
+        function closeQuickEditModal() { document.getElementById('quickEditModal').classList.remove('active'); document.querySelector('#quickEditModal .bottom-sheet').classList.remove('active'); }
+        function applyQuickPrice() { activeMenuItem.price = parseFloat(document.getElementById('quickPriceInput').value); renderMenuItems(); closeQuickEditModal(); }
+
+        function handleDeviceClick(device, source) {
+            activeDevice = device;
+            deviceViewSource = source;
+
+            if (source === 'dashboard' || device.status === 'Inactive') {
+                document.getElementById('detailHeaderTitle').innerText = device.name;
+                document.getElementById('detailBodyTitle').innerText = device.name;
+                const statusBadge = document.getElementById('detailStatusBadge');
+                statusBadge.className = `status-pill ${device.status.toLowerCase()}`;
+                statusBadge.innerHTML = `<div class="dot dot-${device.status.toLowerCase()}"></div><span>${device.status}</span>`;
+                document.getElementById('activateBtnContainer').style.display = (device.status === 'Inactive') ? 'block' : 'none';
+                setActiveView('detailView');
+            } else {
+                document.getElementById('updateHeaderTitle').innerText = device.name;
+                document.getElementById('updateNameInput').value = device.name;
+                document.getElementById('updateDeviceId').innerText = device.id;
+                document.getElementById('updateStatVirtual').innerText = device.virtual;
+                document.getElementById('updateStatOrientation').innerText = device.orientation || 'Horizontal';
+                const orientationContainer = document.getElementById('verticalOrientationContainer');
+                if (device.orientation === 'Vertical') orientationContainer.style.display = 'block';
+                else orientationContainer.style.display = 'none';
+                const pill = document.getElementById('updateStatusPill');
+                pill.className = `status-pill ${device.status.toLowerCase()}`;
+                pill.innerHTML = `<div class="dot dot-${device.status.toLowerCase()}"></div><span>${device.status}</span>`;
+                setActiveView('updateView');
+            }
+        }
+
+        function verifyCode() {
+            const btn = document.getElementById('verifyBtn');
+            const code = document.getElementById('activationCode').value;
+            if (!code) return;
+            btn.innerHTML = "Activating...";
+            setTimeout(() => { 
+                if (activeDevice) { 
+                    activeDevice.status = 'Online'; 
+                    // UPDATED: Redirect based on the captured source context
+                    if (deviceViewSource === 'dashboard') showDashboard();
+                    else showDevicesView();
+                } 
+                btn.innerHTML = "Finish Setup"; 
+            }, 1000);
+        }
+
+        function openVirtualSheet() { document.getElementById('virtualSheet').classList.add('active'); document.querySelector('#virtualSheet .bottom-sheet').classList.add('active'); }
+        function closeVirtualSheet() { document.getElementById('virtualSheet').classList.remove('active'); document.querySelector('#virtualSheet .bottom-sheet').classList.remove('active'); }
+        function selectVirtual(v) { selectedVirtual = v; document.getElementById('virtualDisplay').innerText = v; document.getElementById('virtualDisplay').classList.replace('text-gray-400', 'text-gray-700'); closeVirtualSheet(); }
+
+        function addNewDevice() {
+            const name = document.getElementById('newName').value;
+            if (!name || !selectedVirtual) return;
+            devices.push({ id: '2026' + Math.floor(Math.random()*1000), name: name, virtual: selectedVirtual, status: 'Online', orientation: 'Horizontal' });
+            showDevicesView();
+        }
+
+        function prepDelete(idx) { itemToDeleteIdx = idx; document.getElementById('deleteModal').classList.add('active'); document.querySelector('#deleteModal .bottom-sheet').classList.add('active'); }
+        function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('active'); document.querySelector('#deleteModal .bottom-sheet').classList.remove('active'); document.querySelectorAll('.swipe-content').forEach(c => c.style.transform = 'translateX(0)'); }
+        function confirmDelete() { if (itemToDeleteIdx !== null) { devices.splice(itemToDeleteIdx, 1); renderLists(); } closeDeleteModal(); }
+
+        function initSwipe() {
+            let startX = 0, currentX = 0, isDragging = false, activeContent = null;
+            const maxSwipe = 80;
+            const handleStart = (clientX, content) => { startX = clientX; currentX = clientX; isDragging = true; activeContent = content; content.style.transition = 'none'; document.querySelectorAll('.swipe-content').forEach(c => { if (c !== content) c.style.transform = 'translateX(0)'; }); };
+            const handleMove = (clientX) => { if (!isDragging || !activeContent) return; currentX = clientX; const diff = currentX - startX; if (diff < 0) activeContent.style.transform = `translateX(${Math.max(-maxSwipe - 20, diff)}px)`; };
+            const handleEnd = () => { if (!isDragging || !activeContent) return; isDragging = false; activeContent.style.transition = 'transform 0.3s cubic-bezier(0.17, 0.84, 0.44, 1)'; const diff = currentX - startX; if (diff < -maxSwipe / 2) activeContent.style.transform = `translateX(-${maxSwipe}px)`; else activeContent.style.transform = 'translateX(0)'; activeContent = null; };
+            document.querySelectorAll('.swipe-item').forEach(item => { const content = item.querySelector('.swipe-content'); content.addEventListener('touchstart', (e) => handleStart(e.touches[0].clientX, content), { passive: true }); content.addEventListener('touchmove', (e) => { if (isDragging) handleMove(e.touches[0].clientX); }, { passive: true }); content.addEventListener('touchend', handleEnd); content.addEventListener('mousedown', (e) => handleStart(e.clientX, content)); });
+            window.addEventListener('mousemove', (e) => { if (isDragging) handleMove(e.clientX); });
+            window.addEventListener('mouseup', handleEnd);
+        }
+
+        function saveDeviceChanges() {
+            if (!activeDevice) return;
+            const newName = document.getElementById('updateNameInput').value;
+            if (!newName) return;
+            const idx = devices.findIndex(d => d.id === activeDevice.id);
+            if (idx !== -1) devices[idx].name = newName;
+            showDevicesView();
+        }
+
+        function startActivationFromSummary(idx, source) { 
+            activeDevice = devices[idx]; 
+            deviceViewSource = source; // Correctly capturing source from click
+            showActivationPage(); 
+        }
+
+        window.onload = () => { renderLists(); renderMenuItems(); };
+    </script>
+</body>
+</html>
